@@ -5,7 +5,7 @@
   "main": "send.js",
   "scripts": {
     "dev:send": "node ./send.js",
-    "dev:receive": "node ./receive.js",
+    "dev:receive": "node ./receive.js"
   },
   "author": "",
   "license": "ISC",
