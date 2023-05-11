@@ -1,17 +1,28 @@
-const amqp = require('amqplib');
+const amqp = require("amqplib");
 
-const queueName = "example-queue";
+const exchange = "my-exchange";
+const message = { message: "Hello, world!" };
+const routingKey = "my-routing-key";
 
 const send = async () => {
-    const connection = await amqp.connect('amqp://localhost');
+  try {
+    const connection = await amqp.connect("amqp://localhost:5672");
     const channel = await connection.createChannel();
-    await channel.assertQueue(queueName, { durable: true });
-    Array.from({length: 2}, (_, i) => {
-        const msg = i+1;
-        console.log("[x] Publishing message %s, if the server faults all the message that are not ack will be stored", msg)
-        channel.sendToQueue(queueName, Buffer.from(msg.toString()), { persistent: true });
-    });
-    
-} 
+
+    await channel.assertExchange(exchange, "direct", { durable: true });
+    await channel.publish(
+      exchange,
+      routingKey,
+      Buffer.from(JSON.stringify(message)),
+      { persistent: true }
+    );
+    console.log("Message sent:", message);
+
+    await channel.close();
+    await connection.close();
+  } catch (error) {
+    console.error(error);
+  }
+};
 
 send();

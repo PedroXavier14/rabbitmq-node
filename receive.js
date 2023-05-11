@@ -1,26 +1,34 @@
-const amqp = require('amqplib');
+const amqp = require("amqplib");
 
-const queueName = "example-queue";
+const exchange = "my-exchange";
+const queue = "my-queue";
+const routingKey = "my-routing-key";
 
 const receive = async () => {
-    const connection = await amqp.connect('amqp://localhost');
+  try {
+    const connection = await amqp.connect("amqp://localhost:5672");
     const channel = await connection.createChannel();
 
-    channel.assertQueue(queueName, {durable: true});
+    channel.assertExchange(exchange, "direct", { durable: true });
+    channel.assertQueue(queue, { durable: true });
+    channel.bindQueue(queue, exchange, routingKey);
+    channel.consume(queue, (msg) => {
+      if (msg !== null) {
+        console.log("Received a message:", msg.content.toString());
+        channel.ack(msg);
+      }
+    });
+  } catch (error) {
+    console.log("Error connect to RabbitMQ", error);
+  }
+};
 
+const run = async () => {
+  try {
+    await receive();
+  } catch (error) {
+    console.log(error.message);
+  }
+};
 
-    channel.consume(queueName, (msg) => {
-        const content = msg.content.toString();
-        console.log("[x] Received %s", content);
-        if(parseInt(content) % 2 === 0){
-            console.log("[x] Par number will procede the acknowledgment");
-            channel.ack(msg);
-        }else{
-            console.log("[x] Impar number, will be discarded");
-        }
-    }, {
-        noAck: false
-    })
-}
-
-receive();
+run();
